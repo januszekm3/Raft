@@ -14,7 +14,7 @@ object Runner {
   def main(args: Array[String]): Unit = {
     implicit val system = ActorSystem("RaftActorSystem")
 
-    val node = system.actorOf(ServerNode.props(), "node01")
+    val node = system.actorOf(ServerNode.props(List()), "node01")
     node ! ChangeState(Leader)
 
   }
