@@ -9,7 +9,7 @@ object Messages {
 
   case class AddNodes(nodes: Set[ActorRef])
 
-  case object HeartBeat
+  case object Heartbeat
 
   case object PrintCurrentState
 
