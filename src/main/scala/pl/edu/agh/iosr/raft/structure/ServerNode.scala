@@ -12,8 +12,9 @@ import scala.util.Random
 class ServerNode extends Actor with ActorLogging {
 
   implicit val executionContext = context.dispatcher
+
   var state: State = Follower
-  var otherNodes: List[ActorRef] = List()
+  var otherNodes: Set[ActorRef] = Set()
   var heartbeatScheduler = createHeartbeatScheduler()
   var timeOutScheduler = createTimeOutScheduler()
 
@@ -26,42 +27,47 @@ class ServerNode extends Actor with ActorLogging {
       }
 
     case HeartBeat =>
-      log.debug(s"Received heartbeat ${sender.path.name}")
+      log.debug(s"Received heartbeat from ${sender().path.name}")
       timeOutScheduler.cancel()
       timeOutScheduler = createTimeOutScheduler()
 
-    case Timeout =>
+    case ServerTimeout =>
       log.debug("Received timeout")
       heartbeatScheduler.cancel()
       timeOutScheduler.cancel()
 
     case AddNodes(nodesToAppend) =>
-      otherNodes = nodesToAppend ::: otherNodes
+      otherNodes ++= nodesToAppend
 
     case ChangeState(newState) =>
       log.debug(s"Changing state from $state to $newState")
       state = newState
 
     case PrintCurrentState =>
-      println(s"name = ${self.path.name}")
-      println(s"  state = $state")
-      println(s"  other nodes = $otherNodes")
+      println(
+        s"""name = ${self.path.name}
+            |  state = $state
+            |  other nodes = ${otherNodes.map(_.path.name)}
+         """.stripMargin
+      )
 
     case any =>
       log.warning(s"Received unexpected message $any")
+
   }
 
   private def createHeartbeatScheduler() = {
     context.system.scheduler.schedule(
-    initialDelay = 0 seconds,
-    interval = (5 + Random.nextInt(3)) seconds,
-    self,
-    InternalHeartbeat
+      initialDelay = 0 seconds,
+      interval = (5 + Random.nextInt(3)) seconds,
+      self,
+      InternalHeartbeat
     )
   }
+
   private def createTimeOutScheduler() = {
-    val timeout = 5 + Random.nextInt(5)
-    context.system.scheduler.scheduleOnce(timeout seconds, self, Timeout)
+    val timeout = 2 + Random.nextInt(5)
+    context.system.scheduler.scheduleOnce(timeout seconds, self, ServerTimeout)
   }
 
 }
