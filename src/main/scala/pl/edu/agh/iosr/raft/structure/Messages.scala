@@ -17,4 +17,6 @@ object Messages {
 
   case object PrintCurrentState
 
+  case object Timeout
+
 }

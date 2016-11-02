@@ -1,7 +1,7 @@
 package pl.edu.agh.iosr.raft.structure
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
-import pl.edu.agh.iosr.raft.structure.Messages.{AddNodes, ChangeState, HeartBeat, PrintCurrentState}
+import pl.edu.agh.iosr.raft.structure.Messages._
 import pl.edu.agh.iosr.raft.structure.ServerNode.InternalHeartbeat
 import pl.edu.agh.iosr.raft.structure.State._
 
@@ -9,18 +9,13 @@ import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.util.Random
 
-/**
-  * @author lewap
-  * @since 02.11.16
-  */
 class ServerNode extends Actor with ActorLogging {
 
   implicit val executionContext = context.dispatcher
-
   var state: State = Follower
   var otherNodes: List[ActorRef] = List()
-
-  var scheduler = createScheduler()
+  var heartbeatScheduler = createHeartbeatScheduler()
+  var timeOutScheduler = createTimeOutScheduler()
 
   override def receive: Receive = {
 
@@ -31,9 +26,14 @@ class ServerNode extends Actor with ActorLogging {
       }
 
     case HeartBeat =>
-      log.debug("Received heartbeat")
-      scheduler.cancel()
-      scheduler = createScheduler()
+      log.debug(s"Received heartbeat ${sender.path.name}")
+      timeOutScheduler.cancel()
+      timeOutScheduler = createTimeOutScheduler()
+
+    case Timeout =>
+      log.debug("Received timeout")
+      heartbeatScheduler.cancel()
+      timeOutScheduler.cancel()
 
     case AddNodes(nodesToAppend) =>
       otherNodes = nodesToAppend ::: otherNodes
@@ -51,13 +51,17 @@ class ServerNode extends Actor with ActorLogging {
       log.warning(s"Received unexpected message $any")
   }
 
-  private def createScheduler() = {
+  private def createHeartbeatScheduler() = {
     context.system.scheduler.schedule(
-      initialDelay = 0 seconds,
-      interval = (5 + Random.nextInt(3)) seconds,
-      self,
-      InternalHeartbeat
+    initialDelay = 0 seconds,
+    interval = (5 + Random.nextInt(3)) seconds,
+    self,
+    InternalHeartbeat
     )
+  }
+  private def createTimeOutScheduler() = {
+    val timeout = 5 + Random.nextInt(5)
+    context.system.scheduler.scheduleOnce(timeout seconds, self, Timeout)
   }
 
 }
