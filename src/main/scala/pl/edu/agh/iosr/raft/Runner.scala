@@ -1,9 +1,8 @@
 package pl.edu.agh.iosr.raft
 
-import akka.actor.ActorSystem
-import pl.edu.agh.iosr.raft.structure.Messages.ChangeState
+import akka.actor.{ActorRef, ActorSystem}
+import pl.edu.agh.iosr.raft.structure.Messages.{AddNodes, PrintCurrentState}
 import pl.edu.agh.iosr.raft.structure.ServerNode
-import pl.edu.agh.iosr.raft.structure.State.Leader
 
 /**
   * @author lewap
@@ -14,8 +13,20 @@ object Runner {
   def main(args: Array[String]): Unit = {
     implicit val system = ActorSystem("RaftActorSystem")
 
-    val node = system.actorOf(ServerNode.props(List()), "node01")
-    node ! ChangeState(Leader)
+    val nodesQuantity = 2
+    val iterator = (1 to nodesQuantity).iterator
+    val nodes: List[ActorRef] = List.fill(nodesQuantity)(
+      system.actorOf(ServerNode.props(), s"node${iterator.next()}")
+    )
+
+    nodes foreach { node =>
+      val otherNodes = (nodes.toSet - node).toList
+      node ! AddNodes(otherNodes)
+    }
+
+    nodes foreach { node =>
+      node ! PrintCurrentState
+    }
 
   }
 
