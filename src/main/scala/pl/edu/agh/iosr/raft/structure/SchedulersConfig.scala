@@ -15,7 +15,7 @@ object SchedulersConfig {
     SchedulersConfig(
       initialHeartbeatDelay = 0 seconds,
       heartbeatInterval = (3 + Random.nextInt(2)) seconds,
-      timeout = (2 + Random.nextDouble()) seconds
+      timeout = (5 + Random.nextDouble()) seconds
     )
 
 }

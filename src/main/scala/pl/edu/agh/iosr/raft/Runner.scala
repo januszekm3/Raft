@@ -14,6 +14,8 @@ object Runner {
     nodes foreach { node =>
       node ! PrintCurrentState
     }
+
+
   }
 
   private def initializeNodes(quantity: Int): List[ActorRef] = {

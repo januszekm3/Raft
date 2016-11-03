@@ -9,6 +9,16 @@ object Messages {
 
   case class AddNodes(nodes: Set[ActorRef])
 
+  case class SetNumber(number: Int)
+
+  case class AddNumber(number: Int)
+
+  case object LeaderRequest
+
+  case object LeaderRequestAccepted
+
+  case object NewLeader
+
   case object Heartbeat
 
   case object PrintCurrentState

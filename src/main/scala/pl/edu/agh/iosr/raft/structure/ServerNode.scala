@@ -1,6 +1,6 @@
 package pl.edu.agh.iosr.raft.structure
 
-import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import akka.actor.{Actor, ActorLogging, ActorRef, Cancellable, Props}
 import pl.edu.agh.iosr.raft.structure.Messages._
 import pl.edu.agh.iosr.raft.structure.ServerNode.InternalHeartbeat
 import pl.edu.agh.iosr.raft.structure.State._
@@ -14,26 +14,60 @@ class ServerNode(schedulersConfig: SchedulersConfig) extends Actor with ActorLog
 
   var state: State = Follower
   var otherNodes: Set[ActorRef] = Set()
-  var heartbeatScheduler = createHeartbeatScheduler()
+  var leader: Option[ActorRef] = None
+  var heartbeatScheduler: Option[Cancellable] = None
   var timeoutScheduler = createTimeoutScheduler()
+
+  var number: Int = 0
+  var leaderRequestAcceptedCounter = 0
 
   override def receive: Receive = {
 
     case InternalHeartbeat =>
       log.debug("Received internal heartbeat")
-      otherNodes foreach { node =>
-        node ! Heartbeat
-      }
+      sendToOthers(Heartbeat)
 
     case Heartbeat =>
       log.debug(s"Received heartbeat from ${sender().path.name}")
       timeoutScheduler.cancel()
       timeoutScheduler = createTimeoutScheduler()
 
+    case SetNumber(newNumber) =>
+    // TODO
+
+    case AddNumber(numberToAdd) =>
+    // TODO
+
+    case msg@LeaderRequest =>
+      log.debug(s"$msg received from ${sender().path.name}")
+      if (state == Follower) {
+        sender() ! LeaderRequestAccepted
+      }
+
+    case msg@LeaderRequestAccepted =>
+      log.debug(s"$msg received from ${sender().path.name}")
+      leaderRequestAcceptedCounter += 1
+      val previousState = state
+      if (2 * (leaderRequestAcceptedCounter + 1) > otherNodes.size + 1) {
+        state = Leader
+        leader = Some(self)
+        heartbeatScheduler = Some(createHeartbeatScheduler())
+        if (previousState != state) {
+          sendToOthers(NewLeader)
+        }
+      }
+
+    case msg@NewLeader =>
+      log.debug(s"$msg received from ${sender().path.name}")
+      leader = Some(sender())
+      state = Follower
+
     case ServerTimeout =>
       log.debug("Received server timeout")
-      heartbeatScheduler.cancel()
+      heartbeatScheduler.foreach(_.cancel())
       timeoutScheduler.cancel()
+      state = Candidate
+      sendToOthers(LeaderRequest)
 
     case AddNodes(nodesToAppend) =>
       otherNodes ++= nodesToAppend
@@ -53,6 +87,12 @@ class ServerNode(schedulersConfig: SchedulersConfig) extends Actor with ActorLog
     case any =>
       log.warning(s"Received unexpected message $any")
 
+  }
+
+  private def sendToOthers(msg: Any): Unit = {
+    otherNodes foreach { node =>
+      node ! msg
+    }
   }
 
   private def createHeartbeatScheduler() = {

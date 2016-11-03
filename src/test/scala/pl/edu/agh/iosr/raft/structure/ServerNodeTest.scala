@@ -3,7 +3,7 @@ package pl.edu.agh.iosr.raft.structure
 import org.scalatest.{Matchers, WordSpecLike}
 
 
-class ServerNodeTest extends WordSpecLike with Matchers{
+class ServerNodeTest extends WordSpecLike with Matchers {
 
   "this test" should {
     "pass" in {
@@ -12,5 +12,3 @@ class ServerNodeTest extends WordSpecLike with Matchers{
   }
 
 }
-
-
