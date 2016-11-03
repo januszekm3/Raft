@@ -14,8 +14,8 @@ object SchedulersConfig {
   def random() =
     SchedulersConfig(
       initialHeartbeatDelay = 0 seconds,
-      heartbeatInterval = (3 + Random.nextInt(2)) seconds,
-      timeout = (5 + Random.nextDouble()) seconds
+      heartbeatInterval = (3 + Random.nextInt(3)) seconds,
+      timeout = (3 + Random.nextDouble()) seconds
     )
 
 }

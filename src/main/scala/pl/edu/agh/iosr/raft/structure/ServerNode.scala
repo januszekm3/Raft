@@ -61,6 +61,7 @@ class ServerNode(schedulersConfig: SchedulersConfig) extends Actor with ActorLog
       log.debug(s"$msg received from ${sender().path.name}")
       leader = Some(sender())
       state = Follower
+      heartbeatScheduler.foreach(_.cancel())
 
     case ServerTimeout =>
       log.debug("Received server timeout")
