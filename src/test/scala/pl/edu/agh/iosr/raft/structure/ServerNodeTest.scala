@@ -11,12 +11,6 @@ class ServerNodeTest extends WordSpecLike with Matchers{
     }
   }
 
-  "this test" should {
-    "fail" in {
-      true shouldEqual false
-    }
-
-  }
 }
 
 
