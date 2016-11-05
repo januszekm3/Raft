@@ -11,9 +11,11 @@ trait ActionMessages {
 
   case class SetNumberToLeader(number: Int)
 
-  case class SetNumber(number: Int, uuid: String)
+  case class SetNumberRequest(number: Int, uuid: String)
 
   case class SetNumberAck(number: Int, uuid: String)
+
+  case class SetNumberCommit(number: Int)
 
   case class AddNumberToLeader(number: Int)
 

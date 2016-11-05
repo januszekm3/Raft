@@ -42,18 +42,23 @@ class ServerNode(schedulersConfig: SchedulersConfig) extends Actor with ActorLog
       } else {
         val uuid = UUID.randomUUID().toString
         setNumberAcks += uuid -> 1
-        sendToOthers(SetNumber(newNumber, uuid))
+        sendToOthers(SetNumberRequest(newNumber, uuid))
       }
 
-    case SetNumber(newNumber, uuid) =>
+    case SetNumberRequest(newNumber, uuid) =>
        sender() ! SetNumberAck(newNumber, uuid)
 
     case SetNumberAck(newNumber, uuid) =>
       setNumberAcks += uuid -> (setNumberAcks(uuid) + 1)
       if (2 * setNumberAcks(uuid) > otherNodes.size + 1) {
         number = newNumber
-
+        if(2 * (setNumberAcks(uuid) - 1) <= otherNodes.size + 1 ) {
+          sendToOthers(SetNumberCommit(newNumber))
+        }
       }
+
+    case SetNumberCommit(newNumber) =>
+      number = newNumber
 
     case AddNumberToLeader(numberToAdd) =>
     // TODO
