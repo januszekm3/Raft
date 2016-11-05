@@ -52,6 +52,7 @@ class ServerNode(schedulersConfig: SchedulersConfig) extends Actor with ActorLog
         state = Leader
         leader = Some(self)
         heartbeatScheduler = Some(createHeartbeatScheduler())
+        leaderRequestAcceptedCounter = 0
         if (previousState != state) {
           sendToOthers(NewLeader)
         }
@@ -62,6 +63,7 @@ class ServerNode(schedulersConfig: SchedulersConfig) extends Actor with ActorLog
       leader = Some(sender())
       state = Follower
       heartbeatScheduler.foreach(_.cancel())
+      leaderRequestAcceptedCounter = 0
 
     case ServerTimeout =>
       log.debug("Received server timeout")
