@@ -3,9 +3,9 @@ package pl.edu.agh.iosr.raft.structure
 import akka.actor.ActorRef
 import pl.edu.agh.iosr.raft.structure.State.State
 
-object Messages {
+object Messages extends ActionMessages with GetterMessages
 
-  case class ChangeState(newState: State)
+trait ActionMessages {
 
   case class AddNodes(nodes: Set[ActorRef])
 
@@ -21,8 +21,15 @@ object Messages {
 
   case object Heartbeat
 
-  case object PrintCurrentState
-
   case object ServerTimeout
 
 }
+
+trait GetterMessages {
+
+  case object GetCurrentState
+
+  case object PrintCurrentState
+
+}
+

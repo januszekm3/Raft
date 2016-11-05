@@ -2,7 +2,7 @@ package pl.edu.agh.iosr.raft.structure
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Cancellable, Props}
 import pl.edu.agh.iosr.raft.structure.Messages._
-import pl.edu.agh.iosr.raft.structure.ServerNode.InternalHeartbeat
+import pl.edu.agh.iosr.raft.structure.ServerNode.{InternalHeartbeat, InternalState}
 import pl.edu.agh.iosr.raft.structure.State._
 
 import scala.language.postfixOps
@@ -21,8 +21,9 @@ class ServerNode(schedulersConfig: SchedulersConfig) extends Actor with ActorLog
   var number: Int = 0
   var leaderRequestAcceptedCounter = 0
 
-  override def receive: Receive = {
+  override def receive: Receive = actionsReceive orElse otherReceive
 
+  def actionsReceive: Receive = {
     case InternalHeartbeat =>
       log.debug("Received internal heartbeat")
       sendToOthers(Heartbeat)
@@ -68,16 +69,16 @@ class ServerNode(schedulersConfig: SchedulersConfig) extends Actor with ActorLog
     case ServerTimeout =>
       log.debug("Received server timeout")
       heartbeatScheduler.foreach(_.cancel())
-      timeoutScheduler.cancel()
       state = Candidate
       sendToOthers(LeaderRequest)
 
     case AddNodes(nodesToAppend) =>
       otherNodes ++= nodesToAppend
+  }
 
-    case ChangeState(newState) =>
-      log.debug(s"Changing state from $state to $newState")
-      state = newState
+  def otherReceive: Receive = {
+    case GetCurrentState =>
+      sender() ! currentState()
 
     case PrintCurrentState =>
       println(
@@ -89,7 +90,6 @@ class ServerNode(schedulersConfig: SchedulersConfig) extends Actor with ActorLog
 
     case any =>
       log.warning(s"Received unexpected message $any")
-
   }
 
   private def sendToOthers(msg: Any): Unit = {
@@ -111,6 +111,9 @@ class ServerNode(schedulersConfig: SchedulersConfig) extends Actor with ActorLog
     systemScheduler.scheduleOnce(schedulersConfig.timeout, self, ServerTimeout)
   }
 
+  private def currentState(): InternalState =
+    InternalState(state, otherNodes, leader, heartbeatScheduler, timeoutScheduler, number, leaderRequestAcceptedCounter)
+
 }
 
 object ServerNode {
@@ -119,5 +122,9 @@ object ServerNode {
     Props(new ServerNode(schedulersConfig))
 
   case object InternalHeartbeat
+
+  case class InternalState(state: State, otherNodes: Set[ActorRef], leader: Option[ActorRef],
+                           heartbeatScheduler: Option[Cancellable], timeoutScheduler: Cancellable,
+                           number: Int, leaderRequestAcceptedCounter: Int)
 
 }
