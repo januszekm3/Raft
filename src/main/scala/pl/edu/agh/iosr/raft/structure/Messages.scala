@@ -9,9 +9,15 @@ trait ActionMessages {
 
   case class AddNodes(nodes: Set[ActorRef])
 
-  case class SetNumber(number: Int)
+  case class SetNumberToLeader(number: Int)
 
-  case class AddNumber(number: Int)
+  case class SetNumber(number: Int, uuid: String)
+
+  case class SetNumberAck(number: Int, uuid: String)
+
+  case class AddNumberToLeader(number: Int)
+
+  case class AddNumber(number: Int, uuid: String)
 
   case object LeaderRequest
 

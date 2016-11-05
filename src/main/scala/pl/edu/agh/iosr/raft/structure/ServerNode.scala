@@ -1,5 +1,7 @@
 package pl.edu.agh.iosr.raft.structure
 
+import java.util.UUID
+
 import akka.actor.{Actor, ActorLogging, ActorRef, Cancellable, Props}
 import pl.edu.agh.iosr.raft.structure.Messages._
 import pl.edu.agh.iosr.raft.structure.ServerNode.{InternalHeartbeat, InternalState}
@@ -19,6 +21,7 @@ class ServerNode(schedulersConfig: SchedulersConfig) extends Actor with ActorLog
   var timeoutScheduler = createTimeoutScheduler()
 
   var number: Int = 0
+  var setNumberAcks: Map[String, Int] = Map()
   var leaderRequestAcceptedCounter = 0
 
   override def receive: Receive = actionsReceive orElse otherReceive
@@ -33,10 +36,26 @@ class ServerNode(schedulersConfig: SchedulersConfig) extends Actor with ActorLog
       timeoutScheduler.cancel()
       timeoutScheduler = createTimeoutScheduler()
 
-    case SetNumber(newNumber) =>
-    // TODO
+    case action@SetNumberToLeader(newNumber) =>
+      if (state != Leader) {
+        leader.foreach(_ ! action)
+      } else {
+        val uuid = UUID.randomUUID().toString
+        setNumberAcks += uuid -> 1
+        sendToOthers(SetNumber(newNumber, uuid))
+      }
 
-    case AddNumber(numberToAdd) =>
+    case SetNumber(newNumber, uuid) =>
+       sender() ! SetNumberAck(newNumber, uuid)
+
+    case SetNumberAck(newNumber, uuid) =>
+      setNumberAcks += uuid -> (setNumberAcks(uuid) + 1)
+      if (2 * setNumberAcks(uuid) > otherNodes.size + 1) {
+        number = newNumber
+
+      }
+
+    case AddNumberToLeader(numberToAdd) =>
     // TODO
 
     case msg@LeaderRequest =>
