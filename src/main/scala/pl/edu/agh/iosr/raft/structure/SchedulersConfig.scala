@@ -5,9 +5,9 @@ import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.util.Random
 
-case class SchedulersConfig(initialHeartbeatDelay: FiniteDuration,
-                            heartbeatInterval: FiniteDuration,
-                            timeout: FiniteDuration)
+case class SchedulersConfig(initialHeartbeatDelay: FiniteDuration = 0 seconds,
+                            heartbeatInterval: FiniteDuration = 80 millis,
+                            timeout: FiniteDuration = 120 millis)
 
 object SchedulersConfig {
 
