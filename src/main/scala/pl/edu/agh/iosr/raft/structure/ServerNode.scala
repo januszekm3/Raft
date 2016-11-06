@@ -1,6 +1,6 @@
 package pl.edu.agh.iosr.raft.structure
 
-import java.util.UUID
+import java.util.{Date, UUID}
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Cancellable, Props}
 import pl.edu.agh.iosr.raft.structure.Messages._
@@ -23,18 +23,29 @@ class ServerNode(schedulersConfig: SchedulersConfig) extends Actor with ActorLog
   var number: Int = 0
   var setNumberAcks: Map[String, Int] = Map()
   var leaderRequestAcceptedCounter = 0
+  var lastSuccessfulCommitDate: Option[Date] = None
 
   override def receive: Receive = actionsReceive orElse otherReceive
 
   def actionsReceive: Receive = {
     case InternalHeartbeat =>
       log.debug("Received internal heartbeat")
-      sendToOthers(Heartbeat)
+      sendToOthers(Heartbeat(lastSuccessfulCommitDate))
 
-    case Heartbeat =>
+    case Heartbeat(leaderLastCommitDate) =>
+      if(!lastSuccessfulCommitDate.equals(leaderLastCommitDate)) {
+        sender() ! StateUpdateRequest
+      }
       log.debug(s"Received heartbeat from ${sender().path.name}")
       timeoutScheduler.cancel()
       timeoutScheduler = createTimeoutScheduler()
+
+    case StateUpdateRequest =>
+      sender () ! StateUpdate(number, lastSuccessfulCommitDate)
+
+    case StateUpdate(newNumber, commitDate) =>
+      number = newNumber
+      lastSuccessfulCommitDate = commitDate
 
     case action@SetNumberToLeader(newNumber) =>
       if (state != Leader) {
@@ -53,12 +64,15 @@ class ServerNode(schedulersConfig: SchedulersConfig) extends Actor with ActorLog
       if (2 * setNumberAcks(uuid) > otherNodes.size + 1) {
         number = newNumber
         if(2 * (setNumberAcks(uuid) - 1) <= otherNodes.size + 1 ) {
-          sendToOthers(SetNumberCommit(newNumber))
+          lastSuccessfulCommitDate = Some(new Date())
+          sendToOthers(SetNumberCommit(newNumber, lastSuccessfulCommitDate))
         }
       }
 
-    case SetNumberCommit(newNumber) =>
+    case SetNumberCommit(newNumber, commitDate) =>
       number = newNumber
+      lastSuccessfulCommitDate = commitDate
+
 
     case AddNumberToLeader(numberToAdd) =>
     // TODO

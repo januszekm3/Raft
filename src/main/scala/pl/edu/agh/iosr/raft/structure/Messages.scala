@@ -1,5 +1,7 @@
 package pl.edu.agh.iosr.raft.structure
 
+import java.util.Date
+
 import akka.actor.ActorRef
 import pl.edu.agh.iosr.raft.structure.State.State
 
@@ -15,11 +17,13 @@ trait ActionMessages {
 
   case class SetNumberAck(number: Int, uuid: String)
 
-  case class SetNumberCommit(number: Int)
+  case class SetNumberCommit(number: Int, commitDate: Option[Date])
 
   case class AddNumberToLeader(number: Int)
 
   case class AddNumber(number: Int, uuid: String)
+
+  case class StateUpdate(number: Int, commitDate: Option[Date])
 
   case object LeaderRequest
 
@@ -27,9 +31,11 @@ trait ActionMessages {
 
   case object NewLeader
 
-  case object Heartbeat
+  case class Heartbeat(stateDate: Option[Date])
 
   case object ServerTimeout
+
+  case object StateUpdateRequest
 
 }
 
