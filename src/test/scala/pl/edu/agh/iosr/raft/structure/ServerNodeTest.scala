@@ -28,8 +28,6 @@ class ServerNodeTest extends TestKit(ActorSystem("ServerNodeTestSystem")) with W
       serverNode ! AddNodes(Set(sender))
 
       "expect no msg during timeout time after heartbeat" in {
-        probe.expectNoMsg(0.6 second)
-
         serverNode ! Heartbeat
         probe.expectNoMsg(1 seconds)
       }
