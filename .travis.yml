@@ -10,3 +10,8 @@ notifications:
       - jmirosla@student.agh.edu.pl
       - lewap@student.agh.edu.pl
       - dpawlak@student.agh.edu.pl
+cache:
+  directories:
+  - $HOME/.ivy2
+  - $HOME/.m2
+  - $HOME/.sbt
