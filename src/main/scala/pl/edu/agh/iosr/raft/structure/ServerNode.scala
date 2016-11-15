@@ -4,6 +4,7 @@ import java.util.{Date, UUID}
 
 import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef, Cancellable, Props}
 import akka.event.LoggingReceive
+import pl.edu.agh.iosr.raft.ClientActor.ClientAck
 import pl.edu.agh.iosr.raft.structure.Messages._
 import pl.edu.agh.iosr.raft.structure.ServerNode.{InternalHeartbeat, InternalState}
 import pl.edu.agh.iosr.raft.structure.State._
@@ -49,6 +50,7 @@ class ServerNode(schedulersConfig: SchedulersConfig) extends Actor with ActorLog
       log.debug(s"$msg received from ${sender().path.name}")
       number = newNumber
       lastSuccessfulCommitDate = commitDate
+      printCurrentState()
 
     case action@SetNumberToLeader(newNumber) =>
       log.debug(s"$action received from ${sender().path.name}")
@@ -57,20 +59,23 @@ class ServerNode(schedulersConfig: SchedulersConfig) extends Actor with ActorLog
       } else {
         val uuid = UUID.randomUUID().toString
         setNumberAcks += uuid -> 1
-        sendToOthers(SetNumberRequest(newNumber, uuid))
+        sendToOthers(SetNumberRequest(newNumber, uuid, client = sender()))
       }
 
-    case msg@SetNumberRequest(newNumber, uuid) =>
+    case msg@SetNumberRequest(newNumber, uuid, client) =>
       log.debug(s"$msg received from ${sender().path.name}")
-      sender() ! SetNumberAck(newNumber, uuid)
+      val leader = sender()
+      leader ! SetNumberAck(newNumber, uuid, client)
 
-    case msg@SetNumberAck(newNumber, uuid) =>
+    case msg@SetNumberAck(newNumber, uuid, client) =>
       log.debug(s"$msg received from ${sender().path.name}")
       setNumberAcks += uuid -> (setNumberAcks(uuid) + 1)
       if (2 * setNumberAcks(uuid) > otherNodes.size + 1) {
         number = newNumber
         if (2 * (setNumberAcks(uuid) - 1) <= otherNodes.size + 1) {
           lastSuccessfulCommitDate = Some(new Date())
+
+          client ! ClientAck(number)
 
           sendToOthers(SetNumberCommit(newNumber, lastSuccessfulCommitDate))
         }
@@ -80,7 +85,7 @@ class ServerNode(schedulersConfig: SchedulersConfig) extends Actor with ActorLog
       log.debug(s"$msg received from ${sender().path.name}")
       number = newNumber
       lastSuccessfulCommitDate = commitDate
-      // TODO tu odsyłamy klientowi, że ok
+      printCurrentState()
 
     case AddNumberToLeader(numberToAdd) =>
     // TODO
@@ -127,12 +132,7 @@ class ServerNode(schedulersConfig: SchedulersConfig) extends Actor with ActorLog
       sender() ! currentState()
 
     case PrintCurrentState =>
-      println(
-        s"""name = ${self.path.name}
-            |  state = $state
-            |  other nodes = ${otherNodes.map(_.name)}
-         """.stripMargin
-      )
+      printCurrentState()
 
     case any =>
       log.warning(s"Received unexpected message $any")
@@ -163,6 +163,16 @@ class ServerNode(schedulersConfig: SchedulersConfig) extends Actor with ActorLog
 
   private def currentState(): InternalState =
     InternalState(state, otherNodes, leader, heartbeatScheduler, timeoutScheduler, number, leaderRequestAcceptedCounter)
+
+  private def printCurrentState(): Unit = {
+    println(
+      s"""name = ${self.path.name}
+          |  state = $state
+          |  other nodes = ${otherNodes.map(_.name)}
+          |  number = $number
+         """.stripMargin
+    )
+  }
 
 }
 

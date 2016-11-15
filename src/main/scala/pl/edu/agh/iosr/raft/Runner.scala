@@ -1,6 +1,9 @@
 package pl.edu.agh.iosr.raft
 
+import java.util.concurrent.TimeUnit
+
 import akka.actor.{ActorRef, ActorSystem, PoisonPill}
+import pl.edu.agh.iosr.raft.ClientActor.SetStateToRandomNode
 import pl.edu.agh.iosr.raft.structure.Messages.{AddNodes, PrintCurrentState}
 import pl.edu.agh.iosr.raft.structure.ServerNode
 
@@ -10,6 +13,8 @@ object Runner {
   val nodes = initializeNodes(Settings.nodesQuantity)
   val paths = nodes.map(_.path)
 
+  val client = system.actorOf(ClientActor.props(paths), "client")
+
   def main(args: Array[String]): Unit = {
     printSystemState()
 
@@ -17,7 +22,9 @@ object Runner {
     val name = nodeToKill.path.name
     nodeToKill ! PoisonPill
 
-    Thread.sleep(10000)
+    TimeUnit.SECONDS.sleep(2)
+    client ! SetStateToRandomNode
+    TimeUnit.SECONDS.sleep(15)
 
     val newNode = system.actorOf(ServerNode.props(), name)
     printSystemState()

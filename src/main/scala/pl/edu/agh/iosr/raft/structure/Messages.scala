@@ -2,7 +2,7 @@ package pl.edu.agh.iosr.raft.structure
 
 import java.util.Date
 
-import akka.actor.ActorPath
+import akka.actor.{ActorPath, ActorRef}
 
 object Messages extends ActionMessages with GetterMessages
 
@@ -12,9 +12,9 @@ trait ActionMessages {
 
   case class SetNumberToLeader(number: Int)
 
-  case class SetNumberRequest(number: Int, uuid: String)
+  case class SetNumberRequest(number: Int, uuid: String, client: ActorRef)
 
-  case class SetNumberAck(number: Int, uuid: String)
+  case class SetNumberAck(number: Int, uuid: String, client: ActorRef)
 
   case class SetNumberCommit(number: Int, commitDate: Option[Date])
 
