@@ -3,7 +3,6 @@ package pl.edu.agh.iosr.raft.structure
 import java.util.{Date, UUID}
 
 import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef, Cancellable, Props}
-import akka.event.LoggingReceive
 import pl.edu.agh.iosr.raft.ClientActor.ClientAck
 import pl.edu.agh.iosr.raft.structure.Messages._
 import pl.edu.agh.iosr.raft.structure.ServerNode.{InternalHeartbeat, InternalState}
