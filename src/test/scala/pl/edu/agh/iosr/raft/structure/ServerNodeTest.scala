@@ -28,12 +28,12 @@ class ServerNodeTest extends TestKit(ActorSystem("ServerNodeTestSystem")) with W
       serverNode ! AddNodes(Set(sender))
 
       "expect no msg during timeout time after heartbeat" in {
-        serverNode ! Heartbeat
+        serverNode ! Heartbeat(None)
         probe.expectNoMsg(1 seconds)
       }
 
       "be in follower state after heartbeat" in {
-        serverNode ! Heartbeat
+        serverNode ! Heartbeat(None)
 
         serverNode ! GetCurrentState
         probe.expectMsgPF() {
@@ -71,7 +71,7 @@ class ServerNodeTest extends TestKit(ActorSystem("ServerNodeTestSystem")) with W
         serverNode ! InternalHeartbeat
 
         testProbes foreach { probe =>
-          probe.expectMsg(Heartbeat)
+          probe.expectMsg(Heartbeat(None))
         }
       }
     }

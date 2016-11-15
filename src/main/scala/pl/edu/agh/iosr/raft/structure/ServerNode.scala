@@ -41,7 +41,7 @@ class ServerNode(schedulersConfig: SchedulersConfig) extends Actor with ActorLog
       timeoutScheduler = createTimeoutScheduler()
 
     case StateUpdateRequest =>
-      sender () ! StateUpdate(number, lastSuccessfulCommitDate)
+      sender() ! StateUpdate(number, lastSuccessfulCommitDate)
 
     case StateUpdate(newNumber, commitDate) =>
       number = newNumber
