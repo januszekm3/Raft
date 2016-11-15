@@ -1,20 +1,26 @@
 package pl.edu.agh.iosr.raft
 
-import akka.actor.{ActorRef, ActorSystem}
+import akka.actor.{ActorRef, ActorSystem, PoisonPill}
 import pl.edu.agh.iosr.raft.structure.Messages.{AddNodes, PrintCurrentState}
 import pl.edu.agh.iosr.raft.structure.ServerNode
 
 object Runner {
 
   implicit val system = ActorSystem("RaftActorSystem")
+  val nodes = initializeNodes(Settings.nodesQuantity)
+  val paths = nodes.map(_.path)
 
   def main(args: Array[String]): Unit = {
-    val nodes = initializeNodes(Settings.nodesQuantity)
+    printSystemState()
 
-    nodes foreach { node =>
-      node ! PrintCurrentState
-    }
+    val nodeToKill = nodes.head
+    val name = nodeToKill.path.name
+    nodeToKill ! PoisonPill
 
+    Thread.sleep(10000)
+
+    val newNode = system.actorOf(ServerNode.props(), name)
+    printSystemState()
 
   }
 
@@ -27,10 +33,16 @@ object Runner {
     val nodesSet = nodesList.toSet
     nodesSet foreach { node =>
       val otherNodes = nodesSet - node
-      node ! AddNodes(otherNodes)
+      node ! AddNodes(otherNodes.map(_.path))
     }
 
     nodesList
+  }
+
+  private def printSystemState(): Unit = {
+    paths foreach { path =>
+      system.actorSelection(path) ! PrintCurrentState
+    }
   }
 
 }

@@ -2,7 +2,8 @@ package pl.edu.agh.iosr.raft.structure
 
 import java.util.{Date, UUID}
 
-import akka.actor.{Actor, ActorLogging, ActorRef, Cancellable, Props}
+import akka.actor.{Actor, ActorLogging, ActorPath, ActorRef, Cancellable, Props}
+import akka.event.LoggingReceive
 import pl.edu.agh.iosr.raft.structure.Messages._
 import pl.edu.agh.iosr.raft.structure.ServerNode.{InternalHeartbeat, InternalState}
 import pl.edu.agh.iosr.raft.structure.State._
@@ -15,7 +16,7 @@ class ServerNode(schedulersConfig: SchedulersConfig) extends Actor with ActorLog
   val systemScheduler = context.system.scheduler
 
   var state: State = Follower
-  var otherNodes: Set[ActorRef] = Set()
+  var otherNodes: Set[ActorPath] = Set()
   var leader: Option[ActorRef] = None
   var heartbeatScheduler: Option[Cancellable] = None
   var timeoutScheduler = createTimeoutScheduler()
@@ -33,46 +34,53 @@ class ServerNode(schedulersConfig: SchedulersConfig) extends Actor with ActorLog
       sendToOthers(Heartbeat(lastSuccessfulCommitDate))
 
     case Heartbeat(leaderLastCommitDate) =>
-      if(!lastSuccessfulCommitDate.equals(leaderLastCommitDate)) {
+      if (!lastSuccessfulCommitDate.equals(leaderLastCommitDate)) {
         sender() ! StateUpdateRequest
       }
       log.debug(s"Received heartbeat from ${sender().path.name}")
       timeoutScheduler.cancel()
       timeoutScheduler = createTimeoutScheduler()
 
-    case StateUpdateRequest =>
+    case msg@StateUpdateRequest =>
+      log.debug(s"$msg received from ${sender().path.name}")
       sender() ! StateUpdate(number, lastSuccessfulCommitDate)
 
-    case StateUpdate(newNumber, commitDate) =>
+    case msg@StateUpdate(newNumber, commitDate) =>
+      log.debug(s"$msg received from ${sender().path.name}")
       number = newNumber
       lastSuccessfulCommitDate = commitDate
 
     case action@SetNumberToLeader(newNumber) =>
+      log.debug(s"$action received from ${sender().path.name}")
       if (state != Leader) {
-        leader.foreach(_ ! action)
+        leader.foreach(_ forward action)
       } else {
         val uuid = UUID.randomUUID().toString
         setNumberAcks += uuid -> 1
         sendToOthers(SetNumberRequest(newNumber, uuid))
       }
 
-    case SetNumberRequest(newNumber, uuid) =>
-       sender() ! SetNumberAck(newNumber, uuid)
+    case msg@SetNumberRequest(newNumber, uuid) =>
+      log.debug(s"$msg received from ${sender().path.name}")
+      sender() ! SetNumberAck(newNumber, uuid)
 
-    case SetNumberAck(newNumber, uuid) =>
+    case msg@SetNumberAck(newNumber, uuid) =>
+      log.debug(s"$msg received from ${sender().path.name}")
       setNumberAcks += uuid -> (setNumberAcks(uuid) + 1)
       if (2 * setNumberAcks(uuid) > otherNodes.size + 1) {
         number = newNumber
-        if(2 * (setNumberAcks(uuid) - 1) <= otherNodes.size + 1 ) {
+        if (2 * (setNumberAcks(uuid) - 1) <= otherNodes.size + 1) {
           lastSuccessfulCommitDate = Some(new Date())
+
           sendToOthers(SetNumberCommit(newNumber, lastSuccessfulCommitDate))
         }
       }
 
-    case SetNumberCommit(newNumber, commitDate) =>
+    case msg@SetNumberCommit(newNumber, commitDate) =>
+      log.debug(s"$msg received from ${sender().path.name}")
       number = newNumber
       lastSuccessfulCommitDate = commitDate
-
+      // TODO tu odsyłamy klientowi, że ok
 
     case AddNumberToLeader(numberToAdd) =>
     // TODO
@@ -122,7 +130,7 @@ class ServerNode(schedulersConfig: SchedulersConfig) extends Actor with ActorLog
       println(
         s"""name = ${self.path.name}
             |  state = $state
-            |  other nodes = ${otherNodes.map(_.path.name)}
+            |  other nodes = ${otherNodes.map(_.name)}
          """.stripMargin
       )
 
@@ -131,7 +139,11 @@ class ServerNode(schedulersConfig: SchedulersConfig) extends Actor with ActorLog
   }
 
   private def sendToOthers(msg: Any): Unit = {
-    otherNodes foreach { node =>
+    val actors = otherNodes map { nodePath =>
+      context.actorSelection(nodePath)
+    }
+
+    actors foreach { node =>
       node ! msg
     }
   }
@@ -161,7 +173,7 @@ object ServerNode {
 
   case object InternalHeartbeat
 
-  case class InternalState(state: State, otherNodes: Set[ActorRef], leader: Option[ActorRef],
+  case class InternalState(state: State, otherNodes: Set[ActorPath], leader: Option[ActorRef],
                            heartbeatScheduler: Option[Cancellable], timeoutScheduler: Cancellable,
                            number: Int, leaderRequestAcceptedCounter: Int)
 

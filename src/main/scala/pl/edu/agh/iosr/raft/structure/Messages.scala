@@ -2,14 +2,13 @@ package pl.edu.agh.iosr.raft.structure
 
 import java.util.Date
 
-import akka.actor.ActorRef
-import pl.edu.agh.iosr.raft.structure.State.State
+import akka.actor.ActorPath
 
 object Messages extends ActionMessages with GetterMessages
 
 trait ActionMessages {
 
-  case class AddNodes(nodes: Set[ActorRef])
+  case class AddNodes(nodes: Set[ActorPath])
 
   case class SetNumberToLeader(number: Int)
 

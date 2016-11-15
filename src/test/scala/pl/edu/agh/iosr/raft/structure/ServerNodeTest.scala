@@ -25,7 +25,7 @@ class ServerNodeTest extends TestKit(ActorSystem("ServerNodeTestSystem")) with W
 
       val schedulersConfig = SchedulersConfig(timeout = 1.1 second)
       val serverNode = system.actorOf(ServerNode.props(schedulersConfig))
-      serverNode ! AddNodes(Set(sender))
+      serverNode ! AddNodes(Set(sender.path))
 
       "expect no msg during timeout time after heartbeat" in {
         serverNode ! Heartbeat(None)
@@ -65,7 +65,7 @@ class ServerNodeTest extends TestKit(ActorSystem("ServerNodeTestSystem")) with W
       val testProbes = List.fill(3)(TestProbe()).toSet
       val schedulersConfig = SchedulersConfig(timeout = 5 seconds)
       val serverNode = system.actorOf(ServerNode.props(schedulersConfig))
-      serverNode ! AddNodes(testProbes.map(_.ref))
+      serverNode ! AddNodes(testProbes.map(_.ref.path))
 
       "propagate heartbeat to all other nodes" in {
         serverNode ! InternalHeartbeat
@@ -82,7 +82,7 @@ class ServerNodeTest extends TestKit(ActorSystem("ServerNodeTestSystem")) with W
 
       val schedulersConfig = SchedulersConfig(timeout = 3 seconds)
       val serverNode = system.actorOf(ServerNode.props(schedulersConfig))
-      serverNode ! AddNodes(Set(sender))
+      serverNode ! AddNodes(Set(sender.path))
 
       "respond with LeaderRequestAccepted message being in follower state" in {
         serverNode ! GetCurrentState
@@ -119,7 +119,7 @@ class ServerNodeTest extends TestKit(ActorSystem("ServerNodeTestSystem")) with W
         timeout = 1 seconds
       )
       val serverNode = system.actorOf(ServerNode.props(schedulersConfig))
-      serverNode ! AddNodes(Set(sender))
+      serverNode ! AddNodes(Set(sender.path))
 
       "increase leaderRequestAcceptedCounter" in {
         probe.expectMsg(LeaderRequest)
@@ -132,6 +132,34 @@ class ServerNodeTest extends TestKit(ActorSystem("ServerNodeTestSystem")) with W
 
         serverNode ! LeaderRequestAccepted
         probe.expectMsg(NewLeader)
+      }
+    }
+
+    "sending LeaderRequestAccepted given 4 nodes (including itself)" should {
+      val testProbes = List.fill(3)(TestProbe()).toSet
+
+      val schedulersConfig = SchedulersConfig(
+        initialHeartbeatDelay = 30 seconds,
+        heartbeatInterval = 2 seconds,
+        timeout = 1 seconds
+      )
+      val serverNode = system.actorOf(ServerNode.props(schedulersConfig))
+      serverNode ! AddNodes(testProbes.map(_.ref.path))
+
+      "not become leader" in {
+        val probe = testProbes.toList.head
+        implicit val sender = probe.ref
+
+        probe.expectMsg(LeaderRequest)
+
+        serverNode ! GetCurrentState
+        probe.expectMsgPF() {
+          case state: InternalState =>
+            state.state shouldEqual Candidate
+        }
+
+        serverNode ! LeaderRequestAccepted
+        probe.expectNoMsg()
       }
     }
 
