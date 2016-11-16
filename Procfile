@@ -1,1 +1,1 @@
-sbt sbt run -Dhttp.port=9000
+web: target/universal/stage/bin/iosr1 -Dhttp.port=9000
