@@ -10,4 +10,7 @@ object Settings {
 
   val nodesQuantity = Try(config.getInt("raft.nodesQuantity")).getOrElse(5)
 
+  val host = Try(config.getString("raft.api.host")).getOrElse("127.0.0.1")
+  val port = Try(config.getInt("raft.api.port")).getOrElse(9000)
+
 }
