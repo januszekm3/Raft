@@ -20,6 +20,8 @@ class RaftController extends ErrorHandling {
           println(s"\n\nPOST IS WORKING id=$id\n\n")
           complete(StatusCodes.Accepted -> "Request wa accepted")
         }
+      } ~ get {
+        complete(StatusCodes.OK -> "idzie idzie Podbeskidzie")
       }
     }
   }
