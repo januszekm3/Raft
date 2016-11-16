@@ -1,1 +1,1 @@
-web: target/universal/stage/bin/iosr1 -Dhttp.port=9000
+web: /tmp/scala_buildpack_build_dir/target/universal/stage/bin/iosr1 -Dhttp.port=9000
