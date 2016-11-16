@@ -5,7 +5,6 @@ version := "1.0"
 scalaVersion := "2.11.8"
 
 val akkaVersion = "2.4.8"
-val json4sVersion = "3.2.11"
 
 libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-actor" % akkaVersion,
@@ -18,4 +17,4 @@ libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "3.0.0-M15" % "test"
 )
 
-mainClass in Compile := Some("pl.edu.agh.iosr.raft.Runner")
+mainClass in Compile := Some("pl.edu.agh.iosr.raft.RunnerHttp")
