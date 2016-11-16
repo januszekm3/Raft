@@ -4,6 +4,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.stream.ActorMaterializer
 import pl.edu.agh.iosr.raft.api.RaftController
+import util.Properties
 
 /**
   * @author lewap
@@ -15,6 +16,7 @@ object RunnerHttp{
     implicit val materializer = ActorMaterializer()
 
     val controller = new RaftController()
-    Http().bindAndHandle(controller.routes, Settings.host, Settings.port)
+    val myPort = Properties.envOrElse("PORT", "9000").toInt
+    Http().bindAndHandle(controller.routes, Settings.host, myPort)
   }
 }
