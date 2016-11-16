@@ -1,1 +1,1 @@
-sbt run -Dhttp.port=9000
+sbt sbt run -Dhttp.port=9000
