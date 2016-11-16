@@ -164,8 +164,9 @@ class ServerNode(schedulersConfig: SchedulersConfig) extends Actor with ActorLog
     InternalState(state, otherNodes, leader, heartbeatScheduler, timeoutScheduler, number, leaderRequestAcceptedCounter)
 
   private def printCurrentState(): Unit = {
-    println(
-      s"""name = ${self.path.name}
+    log.debug(
+      s"""|
+          |name = ${self.path.name}
           |  state = $state
           |  other nodes = ${otherNodes.map(_.name)}
           |  number = $number

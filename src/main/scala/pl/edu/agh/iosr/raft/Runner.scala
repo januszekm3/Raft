@@ -1,55 +1,20 @@
 package pl.edu.agh.iosr.raft
 
-import java.util.concurrent.TimeUnit
+import akka.actor.ActorSystem
+import akka.http.scaladsl.Http
+import akka.stream.ActorMaterializer
+import pl.edu.agh.iosr.raft.api.RaftController
 
-import akka.actor.{ActorRef, ActorSystem, PoisonPill}
-import pl.edu.agh.iosr.raft.ClientActor.SetStateToRandomNode
-import pl.edu.agh.iosr.raft.structure.Messages.{AddNodes, PrintCurrentState}
-import pl.edu.agh.iosr.raft.structure.ServerNode
-
-object Runner {
-
-  implicit val system = ActorSystem("RaftActorSystem")
-  val nodes = initializeNodes(Settings.nodesQuantity)
-  val paths = nodes.map(_.path)
-
-  val client = system.actorOf(ClientActor.props(paths), "client")
-
+/**
+  * @author lewap
+  * @since 16.11.16
+  */
+object Runner{
   def main(args: Array[String]): Unit = {
-    printSystemState()
+    implicit val actorSystem = ActorSystem("raftActorSystem")
+    implicit val materializer = ActorMaterializer()
 
-    val nodeToKill = nodes.head
-    val name = nodeToKill.path.name
-    nodeToKill ! PoisonPill
-
-    TimeUnit.SECONDS.sleep(2)
-    client ! SetStateToRandomNode
-    TimeUnit.SECONDS.sleep(15)
-
-    val newNode = system.actorOf(ServerNode.props(), name)
-    printSystemState()
-
+    val controller = new RaftController()
+    Http().bindAndHandle(controller.routes, "localhost", 9000)
   }
-
-  private def initializeNodes(quantity: Int): List[ActorRef] = {
-    val iterator = (1 to quantity).iterator
-    val nodesList = List.fill(quantity) {
-      system.actorOf(ServerNode.props(), s"node${iterator.next()}")
-    }
-
-    val nodesSet = nodesList.toSet
-    nodesSet foreach { node =>
-      val otherNodes = nodesSet - node
-      node ! AddNodes(otherNodes.map(_.path))
-    }
-
-    nodesList
-  }
-
-  private def printSystemState(): Unit = {
-    paths foreach { path =>
-      system.actorSelection(path) ! PrintCurrentState
-    }
-  }
-
 }
