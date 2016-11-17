@@ -1,1 +1,1 @@
-web: target/universal/stage/bin/Raft
+web: target/universal/stage/bin/raft
