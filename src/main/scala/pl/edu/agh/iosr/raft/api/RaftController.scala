@@ -21,10 +21,22 @@ class RaftController extends ErrorHandling {
 
   private def endpoints: Route = {
     pathPrefix("raft") {
-      path("init" / IntNumber) { nodes =>
+      get {
+        complete(StatusCodes.OK -> "Welcome to raft world :)")
+      } ~ path("init" / IntNumber) { number =>
         post {
-          manager ! RaftManager.Initialize(nodes)
-          complete(StatusCodes.Accepted -> "Initializing raft")
+          manager ! RaftManager.Initialize(number)
+          complete(StatusCodes.Accepted -> s"Initializing raft with $number nodes")
+        }
+      } ~ path("kill" / IntNumber) { number =>
+        post {
+          manager ! RaftManager.KillNode(number)
+          complete(StatusCodes.Accepted -> s"Killing node $number")
+        }
+      } ~ path("start" / IntNumber) { number =>
+        post {
+          manager ! RaftManager.StartNode(number)
+          complete(StatusCodes.Accepted -> s"Attempt to start node $number")
         }
       }
 //
