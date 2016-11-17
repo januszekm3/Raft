@@ -1,1 +1,1 @@
-web: target/universal/stage/bin/iosr1
+web: target/universal/stage/bin/Raft
