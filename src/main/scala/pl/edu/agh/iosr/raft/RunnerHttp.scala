@@ -16,5 +16,7 @@ object RunnerHttp{
 
     val controller = new RaftController()
     Http().bindAndHandle(controller.routes, Settings.host, Settings.port)
+    log.info(s"${Settings.port}")
+    System.out.println(Settings.port)
   }
 }
