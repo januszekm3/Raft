@@ -16,8 +16,6 @@ object RunnerHttp extends StrictLogging {
     implicit val materializer = ActorMaterializer()
 
     val controller = new RaftController()
-    Http().bindAndHandle(controller.routes, Settings.host, Settings.port)
-    logger.info("Host: " + Settings.host)
-    logger.info("Port: " + Settings.port)
+    Http().bindAndHandle(controller.routes, "0.0.0.0", Settings.port)
   }
 }
