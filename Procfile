@@ -1,1 +1,1 @@
-web: java -jar /tmp/scala_buildpack_build_dir/target/scala-2.11/raft_2.11-1.0.jar -Dhttp.port=9000
+web: target/universal/stage/bin/raft -Dhttp.port=${PORT}
