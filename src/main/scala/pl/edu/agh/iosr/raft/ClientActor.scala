@@ -19,23 +19,25 @@ class ClientActor(paths: List[ActorPath]) extends Actor with ActorLogging {
   implicit val timeout: Timeout = 3 seconds
 
   override def receive: Receive = {
-    case SetStateToRandomNode =>
-      sendToRandomNodeUpToSuccess(7)
+    case SetStateToRandomNode(number) =>
+      sendToRandomNodeUpToSuccess(number)
   }
 
   private def sendToRandomNodeUpToSuccess(number: Int): Unit = {
-    val randomNode = context.actorSelection(
-      paths(Random.nextInt(paths.size))
-    )
+    val randomPath = paths(Random.nextInt(paths.size))
+    val randomNode = context.actorSelection(randomPath)
 
+    log.debug(s"client tries to send $number to ${randomPath.name}")
     val futureResult = randomNode ? SetNumberToLeader(number)
     Try(Await.result(futureResult, 3 seconds)) match {
       case Success(msg) =>
         msg match {
-          case msg@ClientAck(nr) => log.debug(s"Client received $msg from ${sender()}")
+          case msg@ClientAck(nr) => log.debug(s"Client received $msg from ${sender().path.name}")
           case other => log.warning(s"Received unexpected msg $other")
         }
-      case Failure(throwable) => sendToRandomNodeUpToSuccess(number)
+      case Failure(throwable) =>
+        log.debug(s"client failed to send $number to ${randomPath.name}. Retrying...")
+        sendToRandomNodeUpToSuccess(number)
     }
   }
 }
@@ -45,7 +47,7 @@ object ClientActor {
   def props(paths: List[ActorPath]): Props =
     Props(new ClientActor(paths))
 
-  case object SetStateToRandomNode
+  case class SetStateToRandomNode(number: Int)
 
   case class ClientAck(number: Int)
 
