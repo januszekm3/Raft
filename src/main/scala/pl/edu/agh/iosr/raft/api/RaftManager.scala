@@ -49,20 +49,24 @@ class RaftManager extends Actor with ActorLogging {
       if (number >= 1 && number <= nodes.size) {
         val nodeName = nodeNameFrom(number)
         log.info(s"Trying to create $nodeName")
-        context.actorOf(ServerNode.props(), nodeName)
+        val reborn = context.actorOf(ServerNode.props(), nodeName)
+        val path = paths(number - 1)
+        reborn ! AddNodes(paths.toSet - path)
       }
 
     case msg@SetStateToRandomNode(number) =>
       client.foreach(_ ! msg)
 
     case GetState =>
-      val states = nodes.reverse.foldLeft(List[InternalState]()) { case (list, node) =>
-        val futureResult = (node ? GetCurrentState).mapTo[InternalState]
-        Try(Await.result(futureResult, 2 seconds)) match {
-          case Success(state) => state :: list
-          case Failure(throwable) => list
+      val states = paths.reverse
+        .map(context.actorSelection)
+        .foldLeft(List[InternalState]()) { case (list, node) =>
+          val futureResult = (node ? GetCurrentState).mapTo[InternalState]
+          Try(Await.result(futureResult, 2 seconds)) match {
+            case Success(state) => state :: list
+            case Failure(throwable) => list
+          }
         }
-      }
       sender() ! states
 
   }
