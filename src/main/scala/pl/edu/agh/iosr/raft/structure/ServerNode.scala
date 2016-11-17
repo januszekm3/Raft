@@ -161,7 +161,8 @@ class ServerNode(schedulersConfig: SchedulersConfig) extends Actor with ActorLog
   }
 
   private def currentState(): InternalState =
-    InternalState(state, otherNodes, leader, heartbeatScheduler, timeoutScheduler, number, leaderRequestAcceptedCounter)
+    InternalState(self.path.name, state, otherNodes, leader, heartbeatScheduler, timeoutScheduler, number, leaderRequestAcceptedCounter,
+      lastSuccessfulCommitDate)
 
   private def printCurrentState(): Unit = {
     log.info(
@@ -183,8 +184,8 @@ object ServerNode {
 
   case object InternalHeartbeat
 
-  case class InternalState(state: State, otherNodes: Set[ActorPath], leader: Option[ActorRef],
+  case class InternalState(name: String, state: State, otherNodes: Set[ActorPath], leader: Option[ActorRef],
                            heartbeatScheduler: Option[Cancellable], timeoutScheduler: Cancellable,
-                           number: Int, leaderRequestAcceptedCounter: Int)
+                           number: Int, leaderRequestAcceptedCounter: Int, lastSuccessfulCommitDate: Option[Date])
 
 }

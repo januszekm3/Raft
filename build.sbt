@@ -11,6 +11,7 @@ libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-slf4j" % akkaVersion,
   "com.typesafe.akka" %% "akka-http-core" % akkaVersion,
   "com.typesafe.akka" %% "akka-http-experimental" % akkaVersion,
+  "org.json4s" %% "json4s-jackson" % "3.2.11",
   "ch.qos.logback" % "logback-classic" % "1.1.7" % "runtime",
   "com.typesafe.scala-logging" %% "scala-logging" % "3.5.0",
   "com.typesafe.akka" %% "akka-testkit" % akkaVersion % "test",

@@ -10,6 +10,7 @@ trait ErrorHandling extends StrictLogging {
 
   val exceptionHandler = ExceptionHandler {
     case e: Exception =>
+      e.printStackTrace()
       extractUri { uri =>
         logger.error(s"Request to $uri could not be handled normally. Exception = $e")
         complete(HttpResponse(StatusCodes.InternalServerError))
