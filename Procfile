@@ -1,1 +1,1 @@
-web: target/universal/stage/bin/raft -Dhttp.hostname=${HOST} -Dhttp.port=${PORT}
+web: target/universal/stage/bin/raft -Dhttp.port=${PORT}
