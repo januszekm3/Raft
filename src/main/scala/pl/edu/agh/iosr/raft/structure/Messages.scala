@@ -18,10 +18,6 @@ trait ActionMessages {
 
   case class SetNumberCommit(number: Int, commitDate: Option[Date])
 
-  case class AddNumberToLeader(number: Int)
-
-  case class AddNumber(number: Int, uuid: String)
-
   case class StateUpdate(number: Int, commitDate: Option[Date])
 
   case object LeaderRequest

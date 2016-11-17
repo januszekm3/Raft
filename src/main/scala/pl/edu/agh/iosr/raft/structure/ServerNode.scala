@@ -86,9 +86,6 @@ class ServerNode(schedulersConfig: SchedulersConfig) extends Actor with ActorLog
       lastSuccessfulCommitDate = commitDate
       printCurrentState()
 
-    case AddNumberToLeader(numberToAdd) =>
-    // TODO
-
     case msg@LeaderRequest =>
       log.info(s"$msg received from ${sender().path.name}")
       if (state == Follower) {
