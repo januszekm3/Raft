@@ -30,29 +30,29 @@ class ServerNode(schedulersConfig: SchedulersConfig) extends Actor with ActorLog
 
   def actionsReceive: Receive = {
     case InternalHeartbeat =>
-      log.debug("Received internal heartbeat")
+      log.info("Received internal heartbeat")
       sendToOthers(Heartbeat(lastSuccessfulCommitDate))
 
     case Heartbeat(leaderLastCommitDate) =>
       if (!lastSuccessfulCommitDate.equals(leaderLastCommitDate)) {
         sender() ! StateUpdateRequest
       }
-      log.debug(s"Received heartbeat from ${sender().path.name}")
+      log.info(s"Received heartbeat from ${sender().path.name}")
       timeoutScheduler.cancel()
       timeoutScheduler = createTimeoutScheduler()
 
     case msg@StateUpdateRequest =>
-      log.debug(s"$msg received from ${sender().path.name}")
+      log.info(s"$msg received from ${sender().path.name}")
       sender() ! StateUpdate(number, lastSuccessfulCommitDate)
 
     case msg@StateUpdate(newNumber, commitDate) =>
-      log.debug(s"$msg received from ${sender().path.name}")
+      log.info(s"$msg received from ${sender().path.name}")
       number = newNumber
       lastSuccessfulCommitDate = commitDate
       printCurrentState()
 
     case action@SetNumberToLeader(newNumber) =>
-      log.debug(s"$action received from ${sender().path.name}")
+      log.info(s"$action received from ${sender().path.name}")
       if (state != Leader) {
         leader.foreach(_ forward action)
       } else {
@@ -62,12 +62,12 @@ class ServerNode(schedulersConfig: SchedulersConfig) extends Actor with ActorLog
       }
 
     case msg@SetNumberRequest(newNumber, uuid, client) =>
-      log.debug(s"$msg received from ${sender().path.name}")
+      log.info(s"$msg received from ${sender().path.name}")
       val leader = sender()
       leader ! SetNumberAck(newNumber, uuid, client)
 
     case msg@SetNumberAck(newNumber, uuid, client) =>
-      log.debug(s"$msg received from ${sender().path.name}")
+      log.info(s"$msg received from ${sender().path.name}")
       setNumberAcks += uuid -> (setNumberAcks(uuid) + 1)
       if (2 * setNumberAcks(uuid) > otherNodes.size + 1) {
         number = newNumber
@@ -81,7 +81,7 @@ class ServerNode(schedulersConfig: SchedulersConfig) extends Actor with ActorLog
       }
 
     case msg@SetNumberCommit(newNumber, commitDate) =>
-      log.debug(s"$msg received from ${sender().path.name}")
+      log.info(s"$msg received from ${sender().path.name}")
       number = newNumber
       lastSuccessfulCommitDate = commitDate
       printCurrentState()
@@ -90,13 +90,13 @@ class ServerNode(schedulersConfig: SchedulersConfig) extends Actor with ActorLog
     // TODO
 
     case msg@LeaderRequest =>
-      log.debug(s"$msg received from ${sender().path.name}")
+      log.info(s"$msg received from ${sender().path.name}")
       if (state == Follower) {
         sender() ! LeaderRequestAccepted
       }
 
     case msg@LeaderRequestAccepted =>
-      log.debug(s"$msg received from ${sender().path.name}")
+      log.info(s"$msg received from ${sender().path.name}")
       leaderRequestAcceptedCounter += 1
       val previousState = state
       if (2 * (leaderRequestAcceptedCounter + 1) > otherNodes.size + 1) {
@@ -110,14 +110,14 @@ class ServerNode(schedulersConfig: SchedulersConfig) extends Actor with ActorLog
       }
 
     case msg@NewLeader =>
-      log.debug(s"$msg received from ${sender().path.name}")
+      log.info(s"$msg received from ${sender().path.name}")
       leader = Some(sender())
       state = Follower
       heartbeatScheduler.foreach(_.cancel())
       leaderRequestAcceptedCounter = 0
 
     case ServerTimeout =>
-      log.debug("Received server timeout")
+      log.info("Received server timeout")
       heartbeatScheduler.foreach(_.cancel())
       state = Candidate
       sendToOthers(LeaderRequest)
@@ -164,7 +164,7 @@ class ServerNode(schedulersConfig: SchedulersConfig) extends Actor with ActorLog
     InternalState(state, otherNodes, leader, heartbeatScheduler, timeoutScheduler, number, leaderRequestAcceptedCounter)
 
   private def printCurrentState(): Unit = {
-    log.debug(
+    log.info(
       s"""|
           |name = ${self.path.name}
           |  state = $state

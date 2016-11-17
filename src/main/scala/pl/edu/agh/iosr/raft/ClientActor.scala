@@ -27,16 +27,16 @@ class ClientActor(paths: List[ActorPath]) extends Actor with ActorLogging {
     val randomPath = paths(Random.nextInt(paths.size))
     val randomNode = context.actorSelection(randomPath)
 
-    log.debug(s"client tries to send $number to ${randomPath.name}")
+    log.info(s"client tries to send $number to ${randomPath.name}")
     val futureResult = randomNode ? SetNumberToLeader(number)
     Try(Await.result(futureResult, 3 seconds)) match {
       case Success(msg) =>
         msg match {
-          case msg@ClientAck(nr) => log.debug(s"Client received $msg from ${sender().path.name}")
+          case msg@ClientAck(nr) => log.info(s"Client received $msg from ${sender().path.name}")
           case other => log.warning(s"Received unexpected msg $other")
         }
       case Failure(throwable) =>
-        log.debug(s"client failed to send $number to ${randomPath.name}. Retrying...")
+        log.info(s"client failed to send $number to ${randomPath.name}. Retrying...")
         sendToRandomNodeUpToSuccess(number)
     }
   }

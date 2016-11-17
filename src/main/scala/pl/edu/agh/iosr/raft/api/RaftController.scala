@@ -14,20 +14,28 @@ import pl.edu.agh.iosr.raft.structure.Messages._
 class RaftController extends ErrorHandling {
 
   implicit val system = ActorSystem("RaftHttp")
+  val manager = system.actorOf(RaftManager.props(), "RaftManager")
 
   def routes: Route =
     handleExceptions(exceptionHandler)(endpoints)
 
   private def endpoints: Route = {
     pathPrefix("raft") {
-      path("example" / IntNumber) { id =>
+      path("init" / IntNumber) { nodes =>
         post {
-          println(s"\n\nPOST IS WORKING id=$id\n\n")
-          complete(StatusCodes.Accepted -> "Request was accepted")
+          manager ! RaftManager.Initialize(nodes)
+          complete(StatusCodes.Accepted -> "Initializing raft")
         }
-      } ~ get {
-        complete(StatusCodes.OK -> "idzie idzie Podbeskidzie")
       }
+//
+//      path("example" / IntNumber) { id =>
+//        post {
+//          println(s"\n\nPOST IS WORKING id=$id\n\n")
+//          complete(StatusCodes.Accepted -> "Request was accepted")
+//        }
+//      } ~ get {
+//        complete(StatusCodes.OK -> "idzie idzie Podbeskidzie")
+//      }
     }
   }
 
