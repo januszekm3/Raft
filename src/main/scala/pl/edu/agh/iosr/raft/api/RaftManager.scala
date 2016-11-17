@@ -62,7 +62,7 @@ class RaftManager extends Actor with ActorLogging {
         .map(context.actorSelection)
         .foldLeft(List[InternalState]()) { case (list, node) =>
           val futureResult = (node ? GetCurrentState).mapTo[InternalState]
-          Try(Await.result(futureResult, 2 seconds)) match {
+          Try(Await.result(futureResult, 0.5 second)) match {
             case Success(state) => state :: list
             case Failure(throwable) => list
           }
