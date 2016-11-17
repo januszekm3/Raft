@@ -1,1 +1,1 @@
-web: target/universal/stage/bin/raft
+web: target/universal/stage/bin/raft -Dhttp.port=9000
