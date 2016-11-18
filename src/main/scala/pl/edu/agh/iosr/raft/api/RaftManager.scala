@@ -41,13 +41,12 @@ class RaftManager extends Actor with ActorLogging {
     case KillNode(number) =>
       if (number >= 1 && number <= nodes.size) {
         log.info(s"Killing ${nodeNameFrom(number)}")
-        val nodeToKill = nodes(number - 1)
-        nodeToKill ! PoisonPill
+        val pathToRemove = paths(number - 1)
+        context.actorSelection(pathToRemove) ! PoisonPill
 
-        val removedPath = paths(number - 1)
-        val other = paths.toSet - removedPath
+        val other = paths.toSet - pathToRemove
         other.map(context.actorSelection) foreach { node =>
-          node ! RemoveNode(removedPath)
+          node ! RemoveNode(pathToRemove)
         }
       }
 
