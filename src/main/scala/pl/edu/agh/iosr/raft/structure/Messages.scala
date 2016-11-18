@@ -10,6 +10,8 @@ trait ActionMessages {
 
   case class AddNodes(nodes: Set[ActorPath])
 
+  case class RemoveNode(node: ActorPath)
+
   case class SetNumberToLeader(number: Int)
 
   case class SetNumberRequest(number: Int, uuid: String, client: ActorRef)

@@ -121,6 +121,9 @@ class ServerNode(schedulersConfig: SchedulersConfig) extends Actor with ActorLog
 
     case AddNodes(nodesToAppend) =>
       otherNodes ++= nodesToAppend
+
+    case RemoveNode(node) =>
+      otherNodes -= node
   }
 
   def otherReceive: Receive = {

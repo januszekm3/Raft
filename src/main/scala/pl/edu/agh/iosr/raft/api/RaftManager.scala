@@ -43,6 +43,12 @@ class RaftManager extends Actor with ActorLogging {
         log.info(s"Killing ${nodeNameFrom(number)}")
         val nodeToKill = nodes(number - 1)
         nodeToKill ! PoisonPill
+
+        val removedPath = paths(number - 1)
+        val other = paths.toSet - removedPath
+        other.map(context.actorSelection) foreach { node =>
+          node ! RemoveNode(removedPath)
+        }
       }
 
     case StartNode(number) =>
@@ -52,6 +58,12 @@ class RaftManager extends Actor with ActorLogging {
         val reborn = context.actorOf(ServerNode.props(), nodeName)
         val path = paths(number - 1)
         reborn ! AddNodes(paths.toSet - path)
+
+        val rebornPath = paths(number - 1)
+        val other = paths.toSet - rebornPath
+        other.map(context.actorSelection) foreach { node =>
+          node ! AddNodes(Set(rebornPath))
+        }
       }
 
     case msg@SetStateToRandomNode(number) =>
