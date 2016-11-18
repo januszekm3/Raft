@@ -45,22 +45,22 @@ class RaftController extends ErrorHandling {
           complete(StatusCodes.OK -> pretty(Extraction.decompose(result)))
         }
       } ~ path("init" / IntNumber) { number =>
-        post {
+        put {
           manager ! RaftManager.Initialize(number)
           complete(StatusCodes.Accepted -> s"Initializing raft with $number nodes")
         }
       } ~ path("kill" / IntNumber) { number =>
-        post {
+        put {
           manager ! RaftManager.KillNode(number)
           complete(StatusCodes.Accepted -> s"Killing node $number")
         }
       } ~ path("start" / IntNumber) { number =>
-        post {
+        put {
           manager ! RaftManager.StartNode(number)
           complete(StatusCodes.Accepted -> s"Attempt to start node $number")
         }
       } ~ path("set" / IntNumber) { number =>
-        post {
+        put {
           manager ! ClientActor.SetStateToRandomNode(number)
           complete(StatusCodes.Accepted -> s"Attempt to set $number")
         }
